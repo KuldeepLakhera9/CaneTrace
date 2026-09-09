@@ -5,11 +5,14 @@ import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { RecentEntriesTable } from "@/components/dashboard/RecentEntriesTable";
 import Link from "next/link";
 import { UserPlus, Download } from "lucide-react";
+import { DashboardStats } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const stats = await DataStore.getDashboardStats();
+  const rawStats = await DataStore.getDashboardStats();
+  // Ensure pure JSON serialization for React Server Components
+  const stats: DashboardStats = JSON.parse(JSON.stringify(rawStats));
 
   return (
     <div className="space-y-6 pb-12">

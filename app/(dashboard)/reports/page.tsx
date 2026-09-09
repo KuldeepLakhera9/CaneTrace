@@ -1,6 +1,7 @@
 import React from "react";
 import { DataStore } from "@/lib/db/store";
 import { ReportsView } from "@/components/reports/ReportsView";
+import { DashboardStats } from "@/types";
 
 export const metadata = {
   title: "Reports & Analytics | CaneTrace",
@@ -9,7 +10,8 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const stats = await DataStore.getDashboardStats();
+  const rawStats = await DataStore.getDashboardStats();
+  const stats: DashboardStats = JSON.parse(JSON.stringify(rawStats));
 
   return (
     <div className="space-y-6 pb-12">
