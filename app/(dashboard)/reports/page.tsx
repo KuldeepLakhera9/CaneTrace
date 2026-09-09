@@ -1,7 +1,6 @@
 import React from "react";
 import { DataStore } from "@/lib/db/store";
 import { ReportsView } from "@/components/reports/ReportsView";
-import { BarChart3 } from "lucide-react";
 
 export const metadata = {
   title: "Reports & Analytics | CaneTrace",

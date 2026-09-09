@@ -1,13 +1,10 @@
 import React from "react";
 import { DataStore } from "@/lib/db/store";
 import { StatCards } from "@/components/dashboard/StatCards";
-import { SeasonChart } from "@/components/dashboard/SeasonChart";
-import { VarietyChart } from "@/components/dashboard/VarietyChart";
-import { LocationChart } from "@/components/dashboard/LocationChart";
+import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { RecentEntriesTable } from "@/components/dashboard/RecentEntriesTable";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { UserPlus, Download, Sparkles, RefreshCw } from "lucide-react";
+import { UserPlus, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -51,14 +48,7 @@ export default async function DashboardPage() {
       <StatCards stats={stats} />
 
       {/* Analytics Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SeasonChart data={stats.seasonDistribution} />
-        <VarietyChart data={stats.varietyDistribution} />
-        <LocationChart
-          districtData={stats.districtDistribution}
-          talukaData={stats.talukaDistribution}
-        />
-      </div>
+      <DashboardCharts stats={stats} />
 
       {/* Recent Entries Data Table */}
       <RecentEntriesTable entries={stats.recentEntries} />
