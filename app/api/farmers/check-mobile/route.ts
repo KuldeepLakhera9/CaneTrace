@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/db/store";
+import { requireAdminSession } from "@/lib/services/apiAuth";
 
 export async function GET(request: NextRequest) {
+  const { errorResponse } = await requireAdminSession();
+  if (errorResponse) return errorResponse;
+
   try {
+
     const { searchParams } = new URL(request.url);
     const mobile = searchParams.get("mobile");
 

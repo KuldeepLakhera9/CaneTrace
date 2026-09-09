@@ -1,9 +1,29 @@
 import { connectToDatabase, isMongoConfigured } from "./connect";
 import { Farmer, IFarmer } from "../models/Farmer";
 import { Cultivation, ICultivation } from "../models/Cultivation";
-import { FarmerRecord, CultivationRecord, DashboardStats } from "@/types";
-import { formatFarmerId, formatCultivationId } from "../utils/idGenerator";
+import { Form, IForm } from "../models/Form";
+import { FormVersion, IFormVersion } from "../models/FormVersion";
+import { FormSubmission, IFormSubmission } from "../models/FormSubmission";
+import { Variety } from "../models/Variety";
+import { Spacing } from "../models/Spacing";
+import {
+  FarmerRecord,
+  CultivationRecord,
+  DashboardStats,
+  FormRecord,
+  FormVersionRecord,
+  FormSubmissionRecord,
+  FormFieldItem,
+} from "@/types";
+import {
+  formatFarmerId,
+  formatCultivationId,
+  formatReferenceNumber,
+  formatSubmissionId,
+  formatFormId,
+} from "../utils/idGenerator";
 import { calculatePlantingSeason, SeasonType } from "../utils/season";
+import { SUGARCANE_VARIETIES, SUGARCANE_SPACINGS } from "@/config/sugarcane";
 
 // Global in-memory storage (empty by default - NO DUMMY DATA)
 declare global {
@@ -11,6 +31,12 @@ declare global {
   var __CANETRACE_FARMERS__: FarmerRecord[] | undefined;
   // eslint-disable-next-line no-var
   var __CANETRACE_CULTIVATIONS__: CultivationRecord[] | undefined;
+  // eslint-disable-next-line no-var
+  var __CANETRACE_FORMS__: FormRecord[] | undefined;
+  // eslint-disable-next-line no-var
+  var __CANETRACE_FORM_VERSIONS__: FormVersionRecord[] | undefined;
+  // eslint-disable-next-line no-var
+  var __CANETRACE_FORM_SUBMISSIONS__: FormSubmissionRecord[] | undefined;
 }
 
 if (!global.__CANETRACE_FARMERS__) {
@@ -19,9 +45,22 @@ if (!global.__CANETRACE_FARMERS__) {
 if (!global.__CANETRACE_CULTIVATIONS__) {
   global.__CANETRACE_CULTIVATIONS__ = [];
 }
+if (!global.__CANETRACE_FORMS__) {
+  global.__CANETRACE_FORMS__ = [];
+}
+if (!global.__CANETRACE_FORM_VERSIONS__) {
+  global.__CANETRACE_FORM_VERSIONS__ = [];
+}
+if (!global.__CANETRACE_FORM_SUBMISSIONS__) {
+  global.__CANETRACE_FORM_SUBMISSIONS__ = [];
+}
 
 const memoryFarmers = global.__CANETRACE_FARMERS__;
 const memoryCultivations = global.__CANETRACE_CULTIVATIONS__;
+const memoryForms = global.__CANETRACE_FORMS__;
+const memoryFormVersions = global.__CANETRACE_FORM_VERSIONS__;
+const memoryFormSubmissions = global.__CANETRACE_FORM_SUBMISSIONS__;
+
 
 export class DataStore {
   // Check duplicate farmer by mobile number
@@ -563,4 +602,597 @@ export class DataStore {
     }
     return false;
   }
+
+  // ==========================================
+  // FORM & FORM VERSION MANAGEMENT
+  // ==========================================
+
+  static getDefaultSugarcaneFields(): FormFieldItem[] {
+    return [
+      {
+        id: "field-name",
+        label: "Farmer Full Name",
+        type: "text",
+        required: true,
+        placeholder: "e.g. Ramesh Narayan Patil",
+        helpText: "Primary identity of the farmer",
+        order: 1,
+        systemKey: "farmerName",
+      },
+      {
+        id: "field-mobile",
+        label: "Mobile Number",
+        type: "mobile",
+        required: true,
+        placeholder: "98XXXXXXXX",
+        helpText: "10-digit Indian mobile number",
+        order: 2,
+        systemKey: "mobile",
+      },
+      {
+        id: "field-pincode",
+        label: "Pincode",
+        type: "number",
+        required: true,
+        placeholder: "e.g. 416001",
+        helpText: "6-digit postal pincode for location auto-detection",
+        order: 3,
+        systemKey: "pincode",
+      },
+      {
+        id: "field-village",
+        label: "Village",
+        type: "text",
+        required: true,
+        placeholder: "Village / Town",
+        helpText: "Auto-detected or selected from pincode",
+        order: 4,
+        systemKey: "village",
+      },
+      {
+        id: "field-taluka",
+        label: "Taluka / Tehsil",
+        type: "text",
+        required: true,
+        placeholder: "Taluka",
+        helpText: "Auto-filled sub-district",
+        order: 5,
+        systemKey: "taluka",
+      },
+      {
+        id: "field-district",
+        label: "District",
+        type: "text",
+        required: true,
+        placeholder: "District",
+        helpText: "Auto-filled district",
+        order: 6,
+        systemKey: "district",
+      },
+      {
+        id: "field-state",
+        label: "State",
+        type: "text",
+        required: true,
+        placeholder: "State",
+        helpText: "State name",
+        order: 7,
+        systemKey: "state",
+      },
+      {
+        id: "field-planting-date",
+        label: "Planting Date",
+        type: "date",
+        required: true,
+        placeholder: "YYYY-MM-DD",
+        helpText: "Planting season will be automatically calculated",
+        order: 8,
+        systemKey: "plantingDate",
+      },
+      {
+        id: "field-variety",
+        label: "Sugarcane Variety",
+        type: "dropdown",
+        required: true,
+        options: ["86032", "265", "13007"],
+        helpText: "Approved high-yield cane variety",
+        order: 9,
+        systemKey: "sugarcaneVariety",
+      },
+      {
+        id: "field-spacing",
+        label: "Row Spacing (ft)",
+        type: "dropdown",
+        required: true,
+        options: ["4.5 × 1.5", "4 × 1.5"],
+        helpText: "Field furrow planting spacing",
+        order: 10,
+        systemKey: "spacing",
+      },
+    ];
+  }
+
+  // Ensure default published sugarcane-2026 form exists
+  static async ensureDefaultForms(): Promise<FormRecord> {
+    const slug = "sugarcane-2026";
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const existing = await Form.findOne({ slug }).lean();
+        if (existing) return existing as unknown as FormRecord;
+      }
+    } else {
+      const found = memoryForms.find((f) => f.slug === slug);
+      if (found) return found;
+    }
+
+    const formId = "FORM-001";
+    const versionId = "FV-001-1";
+    const now = new Date();
+
+    const newForm: FormRecord = {
+      formId,
+      name: "Sugarcane Farmer Registration 2026",
+      slug,
+      description: "Official public data collection portal for sugarcane cultivators and crop cycles.",
+      status: "PUBLISHED",
+      currentVersion: 1,
+      currentVersionId: versionId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const newVersion: FormVersionRecord = {
+      versionId,
+      formId,
+      version: 1,
+      fields: this.getDefaultSugarcaneFields(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        await FormVersion.findOneAndUpdate(
+          { versionId },
+          newVersion,
+          { upsert: true, new: true }
+        );
+        const createdForm = await Form.findOneAndUpdate(
+          { formId },
+          newForm,
+          { upsert: true, new: true }
+        );
+        return createdForm.toObject() as unknown as FormRecord;
+      }
+    }
+
+    memoryForms.push(newForm);
+    memoryFormVersions.push(newVersion);
+    return newForm;
+  }
+
+
+  static async listForms(): Promise<FormRecord[]> {
+    await this.ensureDefaultForms();
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const docs = await Form.find().sort({ createdAt: -1 }).lean();
+        return docs as unknown as FormRecord[];
+      }
+    }
+    return [...memoryForms].sort((a, b) => new Date(b.createdAt || "").getTime() - new Date(a.createdAt || "").getTime());
+  }
+
+  static async findFormById(formId: string): Promise<FormRecord | null> {
+    await this.ensureDefaultForms();
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const doc = await Form.findOne({ formId }).lean();
+        return doc ? (doc as unknown as FormRecord) : null;
+      }
+    }
+    const found = memoryForms.find((f) => f.formId === formId);
+    return found ? { ...found } : null;
+  }
+
+  static async findFormBySlug(slug: string): Promise<FormRecord | null> {
+    await this.ensureDefaultForms();
+    const cleanSlug = slug.toLowerCase().trim();
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const doc = await Form.findOne({ slug: cleanSlug }).lean();
+        return doc ? (doc as unknown as FormRecord) : null;
+      }
+    }
+    const found = memoryForms.find((f) => f.slug.toLowerCase() === cleanSlug);
+    return found ? { ...found } : null;
+  }
+
+
+  static async getFormVersion(versionId: string): Promise<FormVersionRecord | null> {
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const doc = await FormVersion.findOne({ versionId }).lean();
+        return doc ? (doc as unknown as FormVersionRecord) : null;
+      }
+    }
+    const found = memoryFormVersions.find((v) => v.versionId === versionId);
+    return found ? { ...found } : null;
+  }
+
+  static async getLatestVersionForForm(formId: string): Promise<FormVersionRecord | null> {
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const doc = await FormVersion.findOne({ formId }).sort({ version: -1 }).lean();
+        return doc ? (doc as unknown as FormVersionRecord) : null;
+      }
+    }
+    const versions = memoryFormVersions
+      .filter((v) => v.formId === formId)
+      .sort((a, b) => b.version - a.version);
+    return versions.length > 0 ? { ...versions[0] } : null;
+  }
+
+  static async createForm(data: {
+    name: string;
+    slug: string;
+    description?: string;
+    initialFields?: FormFieldItem[];
+  }): Promise<{ form: FormRecord; version: FormVersionRecord }> {
+    const cleanSlug = data.slug.toLowerCase().trim().replace(/[^a-z0-9-]/g, "-");
+    const existingSlug = await this.findFormBySlug(cleanSlug);
+    if (existingSlug) {
+      throw new Error(`A form with slug '${cleanSlug}' already exists.`);
+    }
+
+    let formCount = 1;
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        formCount = (await Form.countDocuments()) + 1;
+      }
+    } else {
+      formCount = memoryForms.length + 1;
+    }
+
+    const formId = formatFormId(formCount);
+    const versionId = `FV-${formCount.toString().padStart(3, "0")}-1`;
+    const now = new Date();
+
+    const newForm: FormRecord = {
+      formId,
+      name: data.name.trim(),
+      slug: cleanSlug,
+      description: data.description?.trim() || "",
+      status: "DRAFT",
+      currentVersion: 1,
+      currentVersionId: versionId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const newVersion: FormVersionRecord = {
+      versionId,
+      formId,
+      version: 1,
+      fields: data.initialFields || this.getDefaultSugarcaneFields(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const createdVersion = await FormVersion.create(newVersion);
+        const createdForm = await Form.create(newForm);
+        return {
+          form: createdForm.toObject() as unknown as FormRecord,
+          version: createdVersion.toObject() as unknown as FormVersionRecord,
+        };
+      }
+    }
+
+    memoryForms.push(newForm);
+    memoryFormVersions.push(newVersion);
+    return { form: newForm, version: newVersion };
+  }
+
+  static async updateFormDraft(
+    formId: string,
+    data: {
+      name?: string;
+      description?: string;
+      fields: FormFieldItem[];
+    }
+  ): Promise<{ form: FormRecord; version: FormVersionRecord }> {
+    const form = await this.findFormById(formId);
+    if (!form) throw new Error("Form not found");
+
+    const latestVersion = await this.getLatestVersionForForm(formId);
+    if (!latestVersion) throw new Error("Form version not found");
+
+    const now = new Date();
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        if (data.name) form.name = data.name;
+        if (data.description !== undefined) form.description = data.description;
+        form.updatedAt = now;
+
+        await Form.updateOne({ formId }, { name: form.name, description: form.description, updatedAt: now });
+        await FormVersion.updateOne(
+          { versionId: latestVersion.versionId },
+          { fields: data.fields, updatedAt: now }
+        );
+
+        return {
+          form,
+          version: { ...latestVersion, fields: data.fields, updatedAt: now },
+        };
+      }
+    }
+
+    if (data.name) form.name = data.name;
+    if (data.description !== undefined) form.description = data.description;
+    form.updatedAt = now;
+    latestVersion.fields = data.fields;
+    latestVersion.updatedAt = now;
+
+    return { form, version: latestVersion };
+  }
+
+  static async publishForm(formId: string): Promise<FormRecord> {
+    const form = await this.findFormById(formId);
+    if (!form) throw new Error("Form not found");
+
+    const now = new Date();
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        await Form.updateOne({ formId }, { status: "PUBLISHED", updatedAt: now });
+        form.status = "PUBLISHED";
+        form.updatedAt = now;
+        return form;
+      }
+    }
+
+    form.status = "PUBLISHED";
+    form.updatedAt = now;
+    return form;
+  }
+
+  static async archiveForm(formId: string): Promise<FormRecord> {
+    const form = await this.findFormById(formId);
+    if (!form) throw new Error("Form not found");
+
+    const now = new Date();
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        await Form.updateOne({ formId }, { status: "ARCHIVED", updatedAt: now });
+        form.status = "ARCHIVED";
+        form.updatedAt = now;
+        return form;
+      }
+    }
+
+    form.status = "ARCHIVED";
+    form.updatedAt = now;
+    return form;
+  }
+
+  // Publish a new version snapshot so historical data is never modified
+  static async publishNewVersion(
+    formId: string,
+    newFields: FormFieldItem[]
+  ): Promise<{ form: FormRecord; version: FormVersionRecord }> {
+    const form = await this.findFormById(formId);
+    if (!form) throw new Error("Form not found");
+
+    const nextVerNumber = form.currentVersion + 1;
+    const newVersionId = `FV-${form.formId.replace("FORM-", "")}-${nextVerNumber}`;
+    const now = new Date();
+
+    const newVersion: FormVersionRecord = {
+      versionId: newVersionId,
+      formId,
+      version: nextVerNumber,
+      fields: newFields,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const createdVer = await FormVersion.create(newVersion);
+        await Form.updateOne(
+          { formId },
+          {
+            currentVersion: nextVerNumber,
+            currentVersionId: newVersionId,
+            status: "PUBLISHED",
+            updatedAt: now,
+          }
+        );
+        form.currentVersion = nextVerNumber;
+        form.currentVersionId = newVersionId;
+        form.status = "PUBLISHED";
+        form.updatedAt = now;
+        return {
+          form,
+          version: createdVer.toObject() as unknown as FormVersionRecord,
+        };
+      }
+    }
+
+    form.currentVersion = nextVerNumber;
+    form.currentVersionId = newVersionId;
+    form.status = "PUBLISHED";
+    form.updatedAt = now;
+    memoryFormVersions.push(newVersion);
+    return { form, version: newVersion };
+  }
+
+  // ==========================================
+  // PUBLIC SUBMISSIONS WITH DUPLICATE HANDLING
+  // ==========================================
+
+  static async submitPublicForm(params: {
+    slug: string;
+    data: Record<string, any>;
+  }): Promise<{
+    referenceNumber: string;
+    formName: string;
+    submissionId: string;
+  }> {
+    const { slug, data } = params;
+    const form = await this.findFormBySlug(slug);
+
+    if (!form) {
+      throw new Error("Form not found");
+    }
+    if (form.status !== "PUBLISHED") {
+      throw new Error("This form is currently not accepting responses.");
+    }
+
+    const version = form.currentVersionId
+      ? await this.getFormVersion(form.currentVersionId)
+      : await this.getLatestVersionForForm(form.formId);
+
+    if (!version) {
+      throw new Error("Form configuration error: active version not found.");
+    }
+
+    // Check duplicate mobile if mobile field exists
+    const mobile = (data.mobile || "").toString().trim();
+    if (mobile) {
+      const existingFarmer = await this.findFarmerByMobile(mobile);
+      if (existingFarmer) {
+        // Privacy-safe duplicate rejection without leaking farmer name or location
+        throw new Error(
+          "This mobile number is already registered. Please contact the organization if you need to update your information."
+        );
+      }
+    }
+
+    // Generate reference code
+    let subCount = 1;
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        subCount = (await FormSubmission.countDocuments()) + 1;
+      }
+    } else {
+      subCount = memoryFormSubmissions.length + 1;
+    }
+
+    const submissionId = formatSubmissionId(subCount);
+    const referenceNumber = formatReferenceNumber(subCount);
+    const now = new Date();
+
+    let farmerId: string | undefined;
+    let cultivationId: string | undefined;
+
+    // If this form contains farmer & cultivation mapping, sync into Farmer & Cultivation records
+    if (data.farmerName && data.mobile && data.pincode && data.plantingDate) {
+      const created = await this.createFarmerWithCultivation({
+        farmerName: data.farmerName,
+        mobile: data.mobile,
+        location: {
+          pincode: data.pincode,
+          village: data.village || "Unknown",
+          taluka: data.taluka || "Unknown",
+          district: data.district || "Unknown",
+          state: data.state || "Maharashtra",
+        },
+        plantingDate: data.plantingDate,
+        sugarcaneVariety: data.sugarcaneVariety || "86032",
+        spacing: data.spacing || "4.5 × 1.5",
+      });
+      farmerId = created.farmer.farmerId;
+      cultivationId = created.cultivation.cultivationId;
+    }
+
+    const newSubmission: FormSubmissionRecord = {
+      submissionId,
+      referenceNumber,
+      formId: form.formId,
+      formVersionId: version.versionId,
+      versionNumber: version.version,
+      data,
+      farmerId,
+      cultivationId,
+      submittedAt: now,
+      createdAt: now,
+    };
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        await FormSubmission.create(newSubmission);
+        return {
+          referenceNumber,
+          formName: form.name,
+          submissionId,
+        };
+      }
+    }
+
+    memoryFormSubmissions.push(newSubmission);
+    return {
+      referenceNumber,
+      formName: form.name,
+      submissionId,
+    };
+  }
+
+  static async listSubmissions(params?: {
+    formId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ submissions: FormSubmissionRecord[]; total: number }> {
+    const { formId, page = 1, limit = 20 } = params || {};
+
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const query: Record<string, unknown> = {};
+        if (formId) query.formId = formId;
+
+        const total = await FormSubmission.countDocuments(query);
+        const docs = await FormSubmission.find(query)
+          .sort({ submittedAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean();
+
+        return {
+          submissions: docs as unknown as FormSubmissionRecord[],
+          total,
+        };
+      }
+    }
+
+    let all = [...memoryFormSubmissions];
+    if (formId) all = all.filter((s) => s.formId === formId);
+    all.sort((a, b) => new Date(b.submittedAt || "").getTime() - new Date(a.submittedAt || "").getTime());
+
+    const total = all.length;
+    const paged = all.slice((page - 1) * limit, page * limit);
+    return { submissions: paged, total };
+  }
 }
+

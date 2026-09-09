@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/db/store";
 import { generateExcelBuffer, generateCsv, ExportRow } from "@/lib/utils/export";
+import { requireAdminSession } from "@/lib/services/apiAuth";
 
 export async function GET(request: NextRequest) {
+  const { errorResponse } = await requireAdminSession();
+  if (errorResponse) return errorResponse;
+
   try {
+
     const { searchParams } = new URL(request.url);
     const season = searchParams.get("season") || undefined;
     const variety = searchParams.get("variety") || undefined;

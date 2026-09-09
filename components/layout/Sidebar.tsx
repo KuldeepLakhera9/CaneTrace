@@ -11,7 +11,9 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
+
 import { Logo } from "@/components/ui/Logo";
 import { UserSession } from "@/types";
 
@@ -26,12 +28,14 @@ export function Sidebar({ user, isOpen, onCloseMobile }: SidebarProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Forms", href: "/forms", icon: FileText },
     { name: "Add Farmer", href: "/farmers/new", icon: UserPlus, highlight: true },
     { name: "Farmers", href: "/farmers", icon: Users },
     { name: "Cultivations", href: "/cultivations", icon: Sprout },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
+
 
   return (
     <>

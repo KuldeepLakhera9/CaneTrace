@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/db/store";
+import { requireAdminSession } from "@/lib/services/apiAuth";
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { errorResponse } = await requireAdminSession();
+  if (errorResponse) return errorResponse;
+
   try {
     const { id } = await params;
+
     const deleted = await DataStore.deleteCultivation(id);
 
     if (!deleted) {

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/db/store";
 import { farmerRegistrationSchema } from "@/lib/validations/farmer";
+import { requireAdminSession } from "@/lib/services/apiAuth";
 
 export async function GET(request: NextRequest) {
+  const { errorResponse } = await requireAdminSession();
+  if (errorResponse) return errorResponse;
+
   try {
     const { searchParams } = new URL(request.url);
+
     const search = searchParams.get("search") || "";
     const district = searchParams.get("district") || "";
     const taluka = searchParams.get("taluka") || "";
