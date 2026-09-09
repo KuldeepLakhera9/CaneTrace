@@ -9,14 +9,14 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Filter,
   RotateCcw,
-  Sprout,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { CultivationRecord, FarmerRecord } from "@/types";
 import { SUGARCANE_VARIETIES, SUGARCANE_SPACINGS } from "@/config/sugarcane";
 
@@ -36,6 +36,10 @@ export function CultivationTable() {
   const [spacing, setSpacing] = useState("");
   const [district, setDistrict] = useState("");
   const [year, setYear] = useState("");
+
+  // Delete state
+  const [cultivationToDelete, setCultivationToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchCultivations = async () => {
     setIsLoading(true);
@@ -83,6 +87,28 @@ export function CultivationTable() {
     setDistrict("");
     setYear("");
     setPage(1);
+  };
+
+  const handleDeleteCultivation = async () => {
+    if (!cultivationToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/cultivations/${cultivationToDelete}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setCultivationToDelete(null);
+        fetchCultivations();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete cultivation cycle");
+      }
+    } catch (err) {
+      console.error("Delete cultivation error", err);
+      alert("Network error while deleting cultivation");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getSeasonVariant = (seasonVal: string) => {
@@ -219,7 +245,7 @@ export function CultivationTable() {
                   <th className="py-3 px-4">Season</th>
                   <th className="py-3 px-4">Sugarcane Variety</th>
                   <th className="py-3 px-4">Spacing</th>
-                  <th className="py-3 px-4 text-right">Action</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -278,13 +304,22 @@ export function CultivationTable() {
                         {c.spacing} ft
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <Link
-                          href={`/farmers/${c.farmerId}`}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-800"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Farmer</span>
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/farmers/${c.farmerId}`}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-800"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Farmer</span>
+                          </Link>
+                          <button
+                            onClick={() => setCultivationToDelete(c.cultivationId)}
+                            title="Delete this cultivation cycle"
+                            className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -325,6 +360,19 @@ export function CultivationTable() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirm Delete Single Cultivation Modal */}
+      {cultivationToDelete && (
+        <ConfirmDeleteModal
+          isOpen={Boolean(cultivationToDelete)}
+          onClose={() => setCultivationToDelete(null)}
+          onConfirm={handleDeleteCultivation}
+          title="Delete Cultivation Record"
+          itemName={`Cycle ID: ${cultivationToDelete}`}
+          description="Are you sure you want to permanently delete this sugarcane cultivation cycle? This will remove the planting date, season, variety, and spacing entry from the database."
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }

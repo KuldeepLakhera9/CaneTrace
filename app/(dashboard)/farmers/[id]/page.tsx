@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -14,12 +15,13 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
-  ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AddCultivationModal } from "@/components/forms/AddCultivationModal";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { FarmerRecord, CultivationRecord } from "@/types";
 
 export default function FarmerDetailsPage({
@@ -29,11 +31,20 @@ export default function FarmerDetailsPage({
 }) {
   const resolvedParams = use(params);
   const farmerId = resolvedParams.id;
+  const router = useRouter();
 
   const [farmer, setFarmer] = useState<FarmerRecord | null>(null);
   const [cultivations, setCultivations] = useState<CultivationRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddCultivationOpen, setIsAddCultivationOpen] = useState(false);
+
+  // Delete Farmer state
+  const [isDeleteFarmerOpen, setIsDeleteFarmerOpen] = useState(false);
+  const [isDeletingFarmer, setIsDeletingFarmer] = useState(false);
+
+  // Delete Cultivation state
+  const [cultivationToDelete, setCultivationToDelete] = useState<string | null>(null);
+  const [isDeletingCultivation, setIsDeletingCultivation] = useState(false);
 
   const loadFarmerData = async () => {
     setIsLoading(true);
@@ -54,6 +65,49 @@ export default function FarmerDetailsPage({
   useEffect(() => {
     loadFarmerData();
   }, [farmerId]);
+
+  const handleDeleteFarmer = async () => {
+    if (!farmer) return;
+    setIsDeletingFarmer(true);
+    try {
+      const res = await fetch(`/api/farmers/${farmer.farmerId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        router.push("/farmers");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete farmer");
+      }
+    } catch (err) {
+      console.error("Delete farmer error", err);
+      alert("Network error while deleting farmer");
+    } finally {
+      setIsDeletingFarmer(false);
+    }
+  };
+
+  const handleDeleteCultivation = async () => {
+    if (!cultivationToDelete) return;
+    setIsDeletingCultivation(true);
+    try {
+      const res = await fetch(`/api/cultivations/${cultivationToDelete}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setCultivationToDelete(null);
+        loadFarmerData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete cultivation cycle");
+      }
+    } catch (err) {
+      console.error("Delete cultivation error", err);
+      alert("Network error while deleting cultivation");
+    } finally {
+      setIsDeletingCultivation(false);
+    }
+  };
 
   const getSeasonVariant = (season: string) => {
     switch (season) {
@@ -123,15 +177,27 @@ export default function FarmerDetailsPage({
           </div>
         </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setIsAddCultivationOpen(true)}
-          className="w-fit"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Add New Cultivation</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDeleteFarmerOpen(true)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-200 dark:border-red-900"
+          >
+            <Trash2 className="w-4 h-4 mr-1 text-red-500" />
+            <span>Delete Farmer</span>
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsAddCultivationOpen(true)}
+            className="w-fit"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Add New Cultivation</span>
+          </Button>
+        </div>
       </div>
 
       {/* Farmer Information Card */}
@@ -220,7 +286,7 @@ export default function FarmerDetailsPage({
                     <th className="py-3 px-4">Season</th>
                     <th className="py-3 px-4">Sugarcane Variety</th>
                     <th className="py-3 px-4">Row Spacing</th>
-                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -258,10 +324,14 @@ export default function FarmerDetailsPage({
                         <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                           {c.spacing} ft
                         </td>
-                        <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700">
-                            Active
-                          </span>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => setCultivationToDelete(c.cultivationId)}
+                            title="Delete this cultivation cycle"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -283,6 +353,28 @@ export default function FarmerDetailsPage({
           setIsAddCultivationOpen(false);
           loadFarmerData();
         }}
+      />
+
+      {/* Confirm Delete Farmer Modal */}
+      <ConfirmDeleteModal
+        isOpen={isDeleteFarmerOpen}
+        onClose={() => setIsDeleteFarmerOpen(false)}
+        onConfirm={handleDeleteFarmer}
+        title="Delete Farmer Profile"
+        itemName={`${farmer.farmerName} (${farmer.farmerId})`}
+        description="Are you sure you want to permanently delete this farmer profile and all their recorded cultivation cycles? This action will permanently remove the record from MongoDB Atlas."
+        isDeleting={isDeletingFarmer}
+      />
+
+      {/* Confirm Delete Single Cultivation Modal */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(cultivationToDelete)}
+        onClose={() => setCultivationToDelete(null)}
+        onConfirm={handleDeleteCultivation}
+        title="Delete Cultivation Cycle"
+        itemName={cultivationToDelete || ""}
+        description="Are you sure you want to delete this sugarcane cultivation cycle from the database? This action cannot be undone."
+        isDeleting={isDeletingCultivation}
       />
     </div>
   );

@@ -520,4 +520,47 @@ export class DataStore {
     });
     return list.cultivations;
   }
+
+  // Delete a farmer and all their associated cultivation records
+  static async deleteFarmer(farmerId: string): Promise<boolean> {
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        await Cultivation.deleteMany({ farmerId });
+        const res = await Farmer.deleteOne({ farmerId });
+        return res.deletedCount > 0;
+      }
+    }
+
+    const farmerIdx = memoryFarmers.findIndex((f) => f.farmerId === farmerId);
+    if (farmerIdx !== -1) {
+      memoryFarmers.splice(farmerIdx, 1);
+      // Remove cultivations
+      for (let i = memoryCultivations.length - 1; i >= 0; i--) {
+        if (memoryCultivations[i].farmerId === farmerId) {
+          memoryCultivations.splice(i, 1);
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // Delete a single cultivation record
+  static async deleteCultivation(cultivationId: string): Promise<boolean> {
+    if (isMongoConfigured()) {
+      const conn = await connectToDatabase();
+      if (conn) {
+        const res = await Cultivation.deleteOne({ cultivationId });
+        return res.deletedCount > 0;
+      }
+    }
+
+    const cultIdx = memoryCultivations.findIndex((c) => c.cultivationId === cultivationId);
+    if (cultIdx !== -1) {
+      memoryCultivations.splice(cultIdx, 1);
+      return true;
+    }
+    return false;
+  }
 }

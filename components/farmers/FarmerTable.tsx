@@ -13,14 +13,12 @@ import {
   ChevronLeft,
   ChevronRight,
   UserPlus,
-  Sprout,
-  MapPin,
-  Phone,
+  Trash2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { AddCultivationModal } from "@/components/forms/AddCultivationModal";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { FarmerRecord } from "@/types";
 
 export function FarmerTable() {
@@ -39,6 +37,10 @@ export function FarmerTable() {
   const [selectedFarmerId, setSelectedFarmerId] = useState<string | null>(null);
   const [selectedFarmerName, setSelectedFarmerName] = useState<string | undefined>(undefined);
   const [isAddCultivationOpen, setIsAddCultivationOpen] = useState(false);
+
+  // Delete Farmer State
+  const [farmerToDelete, setFarmerToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -82,6 +84,28 @@ export function FarmerTable() {
     setSelectedFarmerId(id);
     setSelectedFarmerName(name);
     setIsAddCultivationOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!farmerToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/farmers/${farmerToDelete.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setFarmerToDelete(null);
+        fetchFarmers();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete farmer");
+      }
+    } catch (err) {
+      console.error("Delete error", err);
+      alert("Network error while deleting farmer");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -128,7 +152,7 @@ export function FarmerTable() {
                 className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shrink-0"
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">Export Excel</span>
               </Link>
             </div>
           </div>
@@ -169,14 +193,14 @@ export function FarmerTable() {
                       <div className="max-w-sm mx-auto space-y-2">
                         <p className="font-semibold text-slate-700 dark:text-slate-200">No farmers found</p>
                         <p className="text-xs text-slate-400">
-                          Try changing your search terms or clearing the district filter.
+                          No farmer records currently registered in the database.
                         </p>
                         <Link
                           href="/farmers/new"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold mt-2"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
-                          <span>Register New Farmer</span>
+                          <span>Register First Farmer</span>
                         </Link>
                       </div>
                     </td>
@@ -236,6 +260,13 @@ export function FarmerTable() {
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
+                          <button
+                            onClick={() => setFarmerToDelete({ id: farmer.farmerId, name: farmer.farmerName })}
+                            title="Delete Farmer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -289,6 +320,19 @@ export function FarmerTable() {
             setIsAddCultivationOpen(false);
             fetchFarmers();
           }}
+        />
+      )}
+
+      {/* Confirm Delete Farmer Modal */}
+      {farmerToDelete && (
+        <ConfirmDeleteModal
+          isOpen={Boolean(farmerToDelete)}
+          onClose={() => setFarmerToDelete(null)}
+          onConfirm={handleConfirmDelete}
+          title="Delete Farmer Record"
+          itemName={`${farmerToDelete.name} (${farmerToDelete.id})`}
+          description="Are you sure you want to permanently delete this farmer record? All associated sugarcane cultivation cycles for this farmer will also be deleted from the live database. This action cannot be undone."
+          isDeleting={isDeleting}
         />
       )}
     </div>
