@@ -93,7 +93,7 @@ export function ReportsView({ initialStats }: ReportsViewProps) {
               className="w-full sm:w-auto"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Export Executive Report (.CSV)</span>
+              <span>Download Excel Spreadsheet (.XLSX)</span>
             </Button>
           </div>
         </CardContent>

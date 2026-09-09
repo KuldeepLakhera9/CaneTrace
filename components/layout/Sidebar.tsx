@@ -105,12 +105,12 @@ export function Sidebar({ user, isOpen, onCloseMobile }: SidebarProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                {user?.name || "Field Officer"}
+                {user?.name || "CaneTrace Operator"}
               </p>
               <div className="flex items-center gap-1 mt-0.5">
                 <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
-                <span className="text-[11px] text-slate-500 capitalize font-medium">
-                  {user?.role || "employee"}
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Verified Operator
                 </span>
               </div>
             </div>

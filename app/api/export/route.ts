@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/db/store";
-import { generateCsv, ExportRow } from "@/lib/utils/export";
+import { generateExcelBuffer, generateCsv, ExportRow } from "@/lib/utils/export";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const season = searchParams.get("season") || undefined;
     const variety = searchParams.get("variety") || undefined;
     const district = searchParams.get("district") || undefined;
+    const formatType = searchParams.get("format") || "xlsx";
 
     const data = await DataStore.getExportData({ season, variety, district });
 
@@ -27,14 +28,29 @@ export async function GET(request: NextRequest) {
       createdAt: c.createdAt || new Date(),
     }));
 
-    const csvContent = generateCsv(exportRows);
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `CaneTrace_Farmers_Cultivation_${timestamp}.csv`;
 
-    return new NextResponse(csvContent, {
+    if (formatType === "csv") {
+      const csvContent = generateCsv(exportRows);
+      const filename = `CaneTrace_Farmers_${timestamp}.csv`;
+      return new NextResponse(csvContent, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    }
+
+    // Default: Genuine Microsoft Excel (.xlsx) file
+    const excelBuffer = generateExcelBuffer(exportRows);
+    const filename = `CaneTrace_Farmers_Cultivation_${timestamp}.xlsx`;
+
+    return new NextResponse(excelBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });

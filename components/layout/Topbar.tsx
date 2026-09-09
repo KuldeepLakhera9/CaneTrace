@@ -70,10 +70,10 @@ export function Topbar({ user, onOpenMobileMenu }: TopbarProps) {
         <div className="flex items-center gap-3 pl-1">
           <div className="hidden md:block text-right">
             <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
-              {user?.name || "Officer"}
+              {user?.name || "Cane Operator"}
             </p>
-            <p className="text-[11px] text-slate-500 capitalize leading-tight">
-              {user?.role === "admin" ? "System Administrator" : "Sugarcane Field Officer"}
+            <p className="text-[11px] text-slate-500 leading-tight">
+              Platform Operator
             </p>
           </div>
 

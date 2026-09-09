@@ -33,8 +33,8 @@ export default async function DashboardPage() {
             download
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition"
           >
-            <Download className="w-4 h-4 text-slate-500" />
-            <span>Export Data (CSV)</span>
+            <Download className="w-4 h-4 text-emerald-600" />
+            <span>Download Excel (.xlsx)</span>
           </Link>
 
           <Link
