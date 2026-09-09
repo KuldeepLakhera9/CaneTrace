@@ -245,9 +245,11 @@ export function CultivationTable() {
                   <th className="py-3 px-4">Season</th>
                   <th className="py-3 px-4">Sugarcane Variety</th>
                   <th className="py-3 px-4">Spacing</th>
+                  <th className="py-3 px-4">Soil & Water</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {isLoading ? (
                   <tr>
@@ -303,7 +305,16 @@ export function CultivationTable() {
                       <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                         {c.spacing} ft
                       </td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                        <div className="text-[11px] font-medium text-slate-800 dark:text-slate-200 truncate max-w-[130px]">
+                          {c.soilType || "—"}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate max-w-[130px]">
+                          {c.waterSource || "—"}
+                        </div>
+                      </td>
                       <td className="py-3.5 px-4 text-right">
+
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/farmers/${c.farmerId}`}

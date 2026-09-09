@@ -7,8 +7,15 @@ import {
   farmerRegistrationSchema,
   FarmerRegistrationInput,
 } from "@/lib/validations/farmer";
-import { SUGARCANE_VARIETIES, SUGARCANE_SPACINGS } from "@/config/sugarcane";
+import {
+  SUGARCANE_VARIETIES,
+  SUGARCANE_SPACINGS,
+  SOIL_TYPES,
+  WATER_SOURCES,
+  PLANTING_MATERIALS,
+} from "@/config/sugarcane";
 import { calculatePlantingSeason } from "@/lib/utils/season";
+
 import { DuplicateFarmerModal, DuplicateFarmerInfo } from "@/components/farmers/DuplicateFarmerModal";
 import { SuccessModal } from "@/components/farmers/SuccessModal";
 import { AddCultivationModal } from "@/components/forms/AddCultivationModal";
@@ -74,8 +81,12 @@ export function FarmerRegistrationForm() {
       plantingDate: "",
       sugarcaneVariety: "86032",
       spacing: "4.5 × 1.5",
+      soilType: "Black Soil (खोल माती)",
+      waterSource: "1. Borewell / Tube well (१. बोअरवेल / ट्यूबवेल)",
+      plantingMaterial: "Cane / बेणे (Bene)",
     },
   });
+
 
   const watchPincode = watch("pincode");
   const watchMobile = watch("mobile");
@@ -209,11 +220,15 @@ export function FarmerRegistrationForm() {
       plantingDate: "",
       sugarcaneVariety: "86032",
       spacing: "4.5 × 1.5",
+      soilType: "Black Soil (खोल माती)",
+      waterSource: "1. Borewell / Tube well (१. बोअरवेल / ट्यूबवेल)",
+      plantingMaterial: "Cane / बेणे (Bene)",
     });
     setAvailableVillages([]);
     setIsSuccessModalOpen(false);
     setSubmitError(null);
   };
+
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -559,6 +574,61 @@ export function FarmerRegistrationForm() {
                 )}
               </div>
             </div>
+
+            {/* Additional Agronomic Parameters: Soil, Water, Material */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2">
+              {/* Soil Type */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Soil Type (मातीचा प्रकार)
+                </label>
+                <select
+                  {...register("soilType")}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                >
+                  {SOIL_TYPES.map((st) => (
+                    <option key={st.value} value={st.value}>
+                      {st.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Water Source */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Water Source (पाण्याचे स्त्रोत)
+                </label>
+                <select
+                  {...register("waterSource")}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                >
+                  {WATER_SOURCES.map((ws) => (
+                    <option key={ws.value} value={ws.value}>
+                      {ws.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Planting Material */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Planting Material (लागवड साहित्य)
+                </label>
+                <select
+                  {...register("plantingMaterial")}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                >
+                  {PLANTING_MATERIALS.map((pm) => (
+                    <option key={pm.value} value={pm.value}>
+                      {pm.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
 
             {/* Live Planting Season Detection Banner */}
             {watchPlantingDate && (

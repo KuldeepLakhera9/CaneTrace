@@ -14,6 +14,9 @@ export interface ExportRow {
   season: string;
   sugarcaneVariety: string;
   spacing: string;
+  soilType?: string;
+  waterSource?: string;
+  plantingMaterial?: string;
   createdAt: string | Date;
 }
 
@@ -31,6 +34,9 @@ export function generateExcelBuffer(rows: ExportRow[]): Buffer {
     "Planting Season": r.season,
     "Sugarcane Variety": r.sugarcaneVariety,
     "Row Spacing": r.spacing,
+    "Soil Type": r.soilType || "",
+    "Water Source": r.waterSource || "",
+    "Planting Material": r.plantingMaterial || "",
     "Created Date": r.createdAt ? format(new Date(r.createdAt), "dd-MMM-yyyy HH:mm") : "",
   }));
 
@@ -48,10 +54,14 @@ export function generateExcelBuffer(rows: ExportRow[]): Buffer {
     { wch: 16 }, // State
     { wch: 16 }, // Planting Date
     { wch: 16 }, // Season
-    { wch: 20 }, // Variety
+    { wch: 28 }, // Variety
     { wch: 14 }, // Spacing
+    { wch: 24 }, // Soil Type
+    { wch: 32 }, // Water Source
+    { wch: 22 }, // Planting Material
     { wch: 20 }, // Created Date
   ];
+
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Farmers & Cultivations");
@@ -74,6 +84,9 @@ export function generateCsv(rows: ExportRow[]): string {
     "Season",
     "Sugarcane Variety",
     "Spacing",
+    "Soil Type",
+    "Water Source",
+    "Planting Material",
     "Created Date",
   ];
 
@@ -106,11 +119,15 @@ export function generateCsv(rows: ExportRow[]): string {
       escapeCsv(r.season),
       escapeCsv(r.sugarcaneVariety),
       escapeCsv(r.spacing),
+      escapeCsv(r.soilType),
+      escapeCsv(r.waterSource),
+      escapeCsv(r.plantingMaterial),
       escapeCsv(formattedCreatedDate),
     ].join(",");
 
     csvRows.push(line);
   }
+
 
   // Prepend UTF-8 BOM so Excel opens Indian characters properly
   return "\uFEFF" + csvRows.join("\r\n");

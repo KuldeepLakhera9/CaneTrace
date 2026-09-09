@@ -67,7 +67,11 @@ export async function POST(request: NextRequest) {
       plantingDate: data.plantingDate,
       sugarcaneVariety: data.sugarcaneVariety,
       spacing: data.spacing,
+      soilType: data.soilType,
+      waterSource: data.waterSource,
+      plantingMaterial: data.plantingMaterial,
     });
+
 
     return NextResponse.json(
       {

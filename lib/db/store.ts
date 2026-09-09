@@ -127,6 +127,9 @@ export class DataStore {
     plantingDate: string | Date;
     sugarcaneVariety: string;
     spacing: string;
+    soilType?: string;
+    waterSource?: string;
+    plantingMaterial?: string;
   }): Promise<{ farmer: FarmerRecord; cultivation: CultivationRecord }> {
     const existing = await this.findFarmerByMobile(data.mobile);
     if (existing) {
@@ -166,6 +169,9 @@ export class DataStore {
       season: seasonRes.season,
       sugarcaneVariety: data.sugarcaneVariety,
       spacing: data.spacing,
+      soilType: data.soilType || "",
+      waterSource: data.waterSource || "",
+      plantingMaterial: data.plantingMaterial || "",
       status: "active",
       createdAt: now,
       updatedAt: now,
@@ -195,6 +201,9 @@ export class DataStore {
     plantingDate: string | Date;
     sugarcaneVariety: string;
     spacing: string;
+    soilType?: string;
+    waterSource?: string;
+    plantingMaterial?: string;
   }): Promise<CultivationRecord> {
     const farmer = await this.findFarmerById(data.farmerId);
     if (!farmer) {
@@ -215,6 +224,9 @@ export class DataStore {
       season: seasonRes.season,
       sugarcaneVariety: data.sugarcaneVariety,
       spacing: data.spacing,
+      soilType: data.soilType || "",
+      waterSource: data.waterSource || "",
+      plantingMaterial: data.plantingMaterial || "",
       status: "active",
       createdAt: now,
       updatedAt: now,
@@ -231,6 +243,7 @@ export class DataStore {
     memoryCultivations.unshift(newCultivation);
     return newCultivation;
   }
+
 
   // Get cultivations for a farmer
   static async getCultivationsForFarmer(farmerId: string): Promise<CultivationRecord[]> {
@@ -694,7 +707,13 @@ export class DataStore {
         label: "Sugarcane Variety",
         type: "dropdown",
         required: true,
-        options: ["86032", "265", "13007"],
+        options: [
+          "86032",
+          "265",
+          "13007",
+          "PDN 15006 (Phule sugarcane)",
+          "PDN 15012 (Phule sugarcane)",
+        ],
         helpText: "Approved high-yield cane variety",
         order: 9,
         systemKey: "sugarcaneVariety",
@@ -704,27 +723,93 @@ export class DataStore {
         label: "Row Spacing (ft)",
         type: "dropdown",
         required: true,
-        options: ["4.5 × 1.5", "4 × 1.5"],
+        options: [
+          "4.5 × 2",
+          "4.5 × 1.5",
+          "5 × 1.5",
+          "5 × 2",
+          "6 × 1.5",
+          "4 × 1.5",
+        ],
         helpText: "Field furrow planting spacing",
         order: 10,
         systemKey: "spacing",
       },
+      {
+        id: "field-soil-type",
+        label: "Soil Type (मातीचा प्रकार)",
+        type: "dropdown",
+        required: true,
+        options: [
+          "Black Soil (खोल माती)",
+          "Medium Soil (मध्यम माती)",
+          "Light Soil (हलकी माती)",
+        ],
+        helpText: "Field soil categorization",
+        order: 11,
+        systemKey: "soilType",
+      },
+      {
+        id: "field-water-source",
+        label: "Water Source (पाण्याचे स्त्रोत)",
+        type: "dropdown",
+        required: true,
+        options: [
+          "1. Borewell / Tube well (१. बोअरवेल / ट्यूबवेल)",
+          "2. River (२. नदी)",
+          "3. Canal (३. कालवा)",
+          "4. Pond / Farm pond (४. तलाव / शेततळे)",
+        ],
+        helpText: "Primary irrigation water source",
+        order: 12,
+        systemKey: "waterSource",
+      },
+      {
+        id: "field-planting-material",
+        label: "Planting Material (लागवड साहित्य)",
+        type: "radio",
+        required: true,
+        options: [
+          "Cane / बेणे (Bene)",
+          "Seedling / रोप (Rop)",
+        ],
+        helpText: "Seed cane setts or nursery seedlings",
+        order: 13,
+        systemKey: "plantingMaterial",
+      },
     ];
   }
+
 
   // Ensure default published sugarcane-2026 form exists
   static async ensureDefaultForms(): Promise<FormRecord> {
     const slug = "sugarcane-2026";
+    const defaultFields = this.getDefaultSugarcaneFields();
+
     if (isMongoConfigured()) {
       const conn = await connectToDatabase();
       if (conn) {
         const existing = await Form.findOne({ slug }).lean();
-        if (existing) return existing as unknown as FormRecord;
+        if (existing) {
+          // Always ensure the active version has the updated fields
+          if (existing.currentVersionId) {
+            await FormVersion.updateOne(
+              { versionId: existing.currentVersionId },
+              { fields: defaultFields }
+            );
+          }
+          return existing as unknown as FormRecord;
+        }
       }
     } else {
       const found = memoryForms.find((f) => f.slug === slug);
-      if (found) return found;
+      if (found) {
+        const ver = memoryFormVersions.find((v) => v.versionId === found.currentVersionId);
+        if (ver) ver.fields = defaultFields;
+        return found;
+      }
     }
+
 
     const formId = "FORM-001";
     const versionId = "FV-001-1";
@@ -1121,10 +1206,14 @@ export class DataStore {
         plantingDate: data.plantingDate,
         sugarcaneVariety: data.sugarcaneVariety || "86032",
         spacing: data.spacing || "4.5 × 1.5",
+        soilType: data.soilType || data["field-soil-type"] || "",
+        waterSource: data.waterSource || data["field-water-source"] || "",
+        plantingMaterial: data.plantingMaterial || data["field-planting-material"] || "",
       });
       farmerId = created.farmer.farmerId;
       cultivationId = created.cultivation.cultivationId;
     }
+
 
     const newSubmission: FormSubmissionRecord = {
       submissionId,

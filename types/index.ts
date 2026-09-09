@@ -29,12 +29,16 @@ export interface CultivationRecord {
   location?: LocationData;
   plantingDate: string | Date;
   season: SeasonType;
-  sugarcaneVariety: "86032" | "265" | "13007" | string;
-  spacing: "4.5 × 1.5" | "4 × 1.5" | string;
+  sugarcaneVariety: string;
+  spacing: string;
+  soilType?: string;
+  waterSource?: string;
+  plantingMaterial?: string;
   status?: "active" | "harvested";
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
+
 
 export interface UserSession {
   userId: string;

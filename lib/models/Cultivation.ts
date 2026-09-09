@@ -7,6 +7,9 @@ export interface ICultivation extends Document {
   season: "Adsali" | "Pre-seasonal" | "Suru";
   sugarcaneVariety: string;
   spacing: string;
+  soilType?: string;
+  waterSource?: string;
+  plantingMaterial?: string;
   status: "active" | "harvested";
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +52,21 @@ const CultivationSchema = new Schema<ICultivation>(
       required: [true, "Spacing is required"],
       trim: true,
     },
+    soilType: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    waterSource: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    plantingMaterial: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     status: {
       type: String,
       enum: ["active", "harvested"],
@@ -56,6 +74,7 @@ const CultivationSchema = new Schema<ICultivation>(
       index: true,
     },
   },
+
   {
     timestamps: true,
   }

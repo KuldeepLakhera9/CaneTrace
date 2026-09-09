@@ -16,6 +16,11 @@ export interface SpacingConfig {
   active: boolean;
 }
 
+export interface OptionConfig {
+  value: string;
+  label: string;
+}
+
 export interface SeasonRule {
   seasonKey: "Adsali" | "Pre-seasonal" | "Suru";
   name: string;
@@ -26,6 +31,7 @@ export interface SeasonRule {
   description: string;
   badgeClass: string;
 }
+
 
 export const SUGARCANE_VARIETIES: VarietyConfig[] = [
   {
@@ -52,26 +58,93 @@ export const SUGARCANE_VARIETIES: VarietyConfig[] = [
     description: "Early maturing, high sugar recovery, good ratoonability",
     active: true,
   },
+  {
+    varietyId: "PDN 15006",
+    varietyName: "PDN 15006",
+    displayName: "PDN 15006 (Phule sugarcane)",
+    durationMonths: "12-14",
+    description: "High tonnage, excellent sucrose recovery, drought resilient",
+    active: true,
+  },
+  {
+    varietyId: "PDN 15012",
+    varietyName: "PDN 15012",
+    displayName: "PDN 15012 (Phule sugarcane)",
+    durationMonths: "12-14",
+    description: "High yielding, disease resistant, superior sugar content",
+    active: true,
+  },
 ];
 
 export const SUGARCANE_SPACINGS: SpacingConfig[] = [
   {
+    spacingId: "4.5x2",
+    spacingValue: "4.5 × 2",
+    displayName: "4.5 × 2 ft",
+    unit: "feet",
+    description: "Wide furrow spacing for high tillering and aeration",
+    active: true,
+  },
+  {
     spacingId: "4.5x1.5",
     spacingValue: "4.5 × 1.5",
-    displayName: "4.5 ft × 1.5 ft (Wide Row)",
+    displayName: "4.5 × 1.5 ft",
     unit: "feet",
-    description: "Optimal for mechanized intercultural operations and drip lateral lines",
+    description: "Optimal for mechanized operations and drip lateral lines",
+    active: true,
+  },
+  {
+    spacingId: "5x1.5",
+    spacingValue: "5 × 1.5",
+    displayName: "5 × 1.5 ft",
+    unit: "feet",
+    description: "Wide row spacing ideal for tractor cultivation",
+    active: true,
+  },
+  {
+    spacingId: "5x2",
+    spacingValue: "5 × 2",
+    displayName: "5 × 2 ft",
+    unit: "feet",
+    description: "Spacious row layout for heavy vegetative development",
+    active: true,
+  },
+  {
+    spacingId: "6x1.5",
+    spacingValue: "6 × 1.5",
+    displayName: "6 × 1.5 ft",
+    unit: "feet",
+    description: "Ultra-wide rows suited for intercropping and mechanization",
     active: true,
   },
   {
     spacingId: "4x1.5",
     spacingValue: "4 × 1.5",
-    displayName: "4 ft × 1.5 ft (Standard Row)",
+    displayName: "4 × 1.5 ft",
     unit: "feet",
-    description: "Conventional paired row planting with high plant population",
+    description: "Standard conventional paired row planting",
     active: true,
   },
 ];
+
+export const SOIL_TYPES: OptionConfig[] = [
+  { value: "Black Soil (खोल माती)", label: "Black Soil (खोल माती)" },
+  { value: "Medium Soil (मध्यम माती)", label: "Medium Soil (मध्यम माती)" },
+  { value: "Light Soil (हलकी माती)", label: "Light Soil (हलकी माती)" },
+];
+
+export const WATER_SOURCES: OptionConfig[] = [
+  { value: "1. Borewell / Tube well (१. बोअरवेल / ट्यूबवेल)", label: "1. Borewell / Tube well (१. बोअरवेल / ट्यूबवेल)" },
+  { value: "2. River (२. नदी)", label: "2. River (२. नदी)" },
+  { value: "3. Canal (३. कालवा)", label: "3. Canal (३. कालवा)" },
+  { value: "4. Pond / Farm pond (४. तलाव / शेततळे)", label: "4. Pond / Farm pond (४. तलाव / शेततळे)" },
+];
+
+export const PLANTING_MATERIALS: OptionConfig[] = [
+  { value: "Cane / बेणे (Bene)", label: "Cane / बेणे (Bene)" },
+  { value: "Seedling / रोप (Rop)", label: "Seedling / रोप (Rop)" },
+];
+
 
 export const PLANTING_SEASONS: SeasonRule[] = [
   {

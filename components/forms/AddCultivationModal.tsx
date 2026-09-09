@@ -3,8 +3,15 @@
 import React, { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { SUGARCANE_VARIETIES, SUGARCANE_SPACINGS } from "@/config/sugarcane";
+import {
+  SUGARCANE_VARIETIES,
+  SUGARCANE_SPACINGS,
+  SOIL_TYPES,
+  WATER_SOURCES,
+  PLANTING_MATERIALS,
+} from "@/config/sugarcane";
 import { calculatePlantingSeason } from "@/lib/utils/season";
+
 import { Calendar, AlertCircle, CheckCircle2, Sprout } from "lucide-react";
 
 interface AddCultivationModalProps {
@@ -25,6 +32,9 @@ export function AddCultivationModal({
   const [plantingDate, setPlantingDate] = useState("");
   const [sugarcaneVariety, setSugarcaneVariety] = useState<string>("86032");
   const [spacing, setSpacing] = useState<string>("4.5 × 1.5");
+  const [soilType, setSoilType] = useState<string>("Black Soil (खोल माती)");
+  const [waterSource, setWaterSource] = useState<string>("1. Borewell / Tube well (१. बोअरवेल / ट्यूबवेल)");
+  const [plantingMaterial, setPlantingMaterial] = useState<string>("Cane / बेणे (Bene)");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,10 +65,14 @@ export function AddCultivationModal({
           plantingDate,
           sugarcaneVariety,
           spacing,
+          soilType,
+          waterSource,
+          plantingMaterial,
         }),
       });
 
       const data = await res.json();
+
       if (!res.ok) {
         throw new Error(data.error || "Failed to add cultivation cycle");
       }
@@ -163,7 +177,62 @@ export function AddCultivationModal({
           </select>
         </div>
 
+        {/* Soil Type */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Soil Type (मातीचा प्रकार)
+          </label>
+          <select
+            value={soilType}
+            onChange={(e) => setSoilType(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          >
+            {SOIL_TYPES.map((st) => (
+              <option key={st.value} value={st.value}>
+                {st.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Water Source */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Water Source (पाण्याचे स्त्रोत)
+          </label>
+          <select
+            value={waterSource}
+            onChange={(e) => setWaterSource(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          >
+            {WATER_SOURCES.map((ws) => (
+              <option key={ws.value} value={ws.value}>
+                {ws.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Planting Material */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            Planting Material (लागवड साहित्य)
+          </label>
+          <select
+            value={plantingMaterial}
+            onChange={(e) => setPlantingMaterial(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          >
+            {PLANTING_MATERIALS.map((pm) => (
+              <option key={pm.value} value={pm.value}>
+                {pm.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex items-center justify-end gap-2 pt-3">
+
           <Button type="button" variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>

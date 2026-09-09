@@ -30,8 +30,12 @@ export async function GET(request: NextRequest) {
       season: c.season,
       sugarcaneVariety: c.sugarcaneVariety,
       spacing: c.spacing,
+      soilType: c.soilType,
+      waterSource: c.waterSource,
+      plantingMaterial: c.plantingMaterial,
       createdAt: c.createdAt || new Date(),
     }));
+
 
     const timestamp = new Date().toISOString().slice(0, 10);
 

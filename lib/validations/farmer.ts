@@ -45,12 +45,11 @@ export const farmerRegistrationSchema = z.object({
     }, {
       message: "Selected date is outside supported sugarcane seasons (1 Apr – 14 Jun is unsupported).",
     }),
-  sugarcaneVariety: z.enum(["86032", "265", "13007"], {
-    errorMap: () => ({ message: "Please select a valid sugarcane variety (86032, 265, or 13007)" }),
-  }),
-  spacing: z.enum(["4.5 × 1.5", "4 × 1.5"], {
-    errorMap: () => ({ message: "Please select a valid spacing option (4.5 × 1.5 or 4 × 1.5)" }),
-  }),
+  sugarcaneVariety: z.string().min(1, "Please select a sugarcane variety"),
+  spacing: z.string().min(1, "Please select row spacing"),
+  soilType: z.string().optional(),
+  waterSource: z.string().optional(),
+  plantingMaterial: z.string().optional(),
 });
 
 export type FarmerRegistrationInput = z.infer<typeof farmerRegistrationSchema>;
@@ -66,12 +65,12 @@ export const addCultivationSchema = z.object({
     }, {
       message: "Selected date is outside supported sugarcane seasons (1 Apr – 14 Jun is unsupported).",
     }),
-  sugarcaneVariety: z.enum(["86032", "265", "13007"], {
-    errorMap: () => ({ message: "Please select a valid sugarcane variety" }),
-  }),
-  spacing: z.enum(["4.5 × 1.5", "4 × 1.5"], {
-    errorMap: () => ({ message: "Please select a valid spacing option" }),
-  }),
+  sugarcaneVariety: z.string().min(1, "Please select a sugarcane variety"),
+  spacing: z.string().min(1, "Please select row spacing"),
+  soilType: z.string().optional(),
+  waterSource: z.string().optional(),
+  plantingMaterial: z.string().optional(),
 });
 
 export type AddCultivationInput = z.infer<typeof addCultivationSchema>;
+
